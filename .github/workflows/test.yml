@@ -1,0 +1,61 @@
+name: Tests
+
+# This package has no CI until now, which is the wrong way round: it is a *shared*
+# config. Its three rules run at ERROR level inside the UI Guard job of every LBS app,
+# so a broken rule here does not fail one repo — it fails all of them at once, and only
+# after it has already been published and installed.
+#
+# The matrix is the point. The consumers are split across major versions of ESLint
+# (some consumers are on 9.x, others
+# on 10.x), while this package's own devDependency pins ^9. Testing a
+# single version would leave whichever half is not pinned unverified.
+#
+# Cost: one ~40-second Linux job per matrix entry, no services, no build.
+
+# NOTE: no `push: [main]`. The PR run already tested this tree; re-running the identical
+# matrix after merge doubled this workflow's cost for no new signal.
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+# Supersede in-flight runs for the same PR so a rapid push sequence bills for the last
+# commit only. Never cancels main-branch runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      # Report both majors on a failure rather than hiding the second behind the first.
+      fail-fast: false
+      matrix:
+        eslint: [ '9', '10' ]
+    name: eslint ${{ matrix.eslint }}.x
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      # package-lock.json is gitignored here, so `npm ci` has nothing to install from.
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Pin the ESLint major under test
+        env:
+          ESLINT_MAJOR: ${{ matrix.eslint }}
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-audit --no-fund "eslint@^${ESLINT_MAJOR}"
+          echo "Testing against ESLint $(node -p "require('eslint/package.json').version")"
+
+      - name: Run rule tests
+        run: npm test

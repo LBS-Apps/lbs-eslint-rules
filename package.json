@@ -1,0 +1,30 @@
+{
+  "name": "@lbs/eslint-config",
+  "version": "0.5.1",
+  "description": "Shared ESLint rules for LBS front-ends: every form field carries id+name, user-facing dates are DD.MM.YYYY, date entry uses a picker instead of the native date input.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "rules"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "peerDependencies": {
+    "eslint": ">=9"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@babel/core": "^8.0.1",
+    "@babel/eslint-parser": "^8.0.1",
+    "@babel/preset-react": "^8.0.1",
+    "@babel/preset-typescript": "^8.0.1"
+  }
+}
